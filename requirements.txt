@@ -1,0 +1,10 @@
+fastapi
+joblib
+requests
+pandas
+numpy
+scipy
+implicit
+scikit-learn
+pyarrow
+python-dotenv
