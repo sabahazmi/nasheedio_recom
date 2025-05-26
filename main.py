@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException  # type: ignore
-import joblib  # type: ignore
-from utils import get_latest_file, log_message
+from fastapi import FastAPI, HTTPException
+import joblib
 import logging
+from contextlib import asynccontextmanager # Import asynccontextmanager
 
-app = FastAPI()
+from utils import get_latest_file, log_message
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 # Global variables for lazy-loaded models and data
 als_model = knn_model = item_map = inv_item_map = matrix = None
 
-@app.on_event("startup")
-def load_models():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global als_model, knn_model, item_map, inv_item_map, matrix
     try:
         als_model_path = get_latest_file('models', 'als', 'pkl')
@@ -36,6 +36,11 @@ def load_models():
     except Exception as e:
         log_message(f"Error loading models on startup: {e}")
         raise RuntimeError("Failed to load necessary models or data files.")
+    yield
+    # No shutdown logic needed for this example, but it would go here
+    # e.g., if you had database connections to close or files to write
+
+app = FastAPI(lifespan=lifespan) # Pass the lifespan context manager to FastAPI
 
 def recommend_similar_audios(audio_id: int, top_n: int = 10) -> dict:
     """Return top N similar audio IDs using ALS with KNN fallback."""
